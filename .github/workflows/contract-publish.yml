@@ -25,13 +25,13 @@ jobs:
 
       - name: Run All Pact Tests
         run: |
-          # Run tests in each exercise to collect all contracts
+          # Run tests in each exercise - workflow will fail if any test fails
           for exercise_dir in exercises/javascript/*/; do
             if [ -f "$exercise_dir/package.json" ]; then
               echo "Running tests in $exercise_dir"
               cd "$exercise_dir"
               npm install
-              npm test || true  # Continue even if tests fail
+              npm test
               cd -
             fi
           done
