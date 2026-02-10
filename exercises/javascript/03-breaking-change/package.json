@@ -1,0 +1,17 @@
+{
+  "name": "03-breaking-change-starter",
+  "version": "1.0.0",
+  "description": "CDC Workshop - Exercise 3: Breaking Change & Versioning (Starter)",
+  "scripts": {
+    "test": "jest --testPathPattern=pact"
+  },
+  "devDependencies": {
+    "@pact-foundation/pact": "^13.2.0",
+    "axios": "^1.6.0",
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 30000
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "00-login-reference",
+  "version": "1.0.0",
+  "description": "CDC Workshop - Login Contract Reference (Pre-implemented Example)",
+  "scripts": {
+    "test": "jest --testPathPattern=pact"
+  },
+  "devDependencies": {
+    "@pact-foundation/pact": "^13.2.0",
+    "axios": "^1.6.0",
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 30000
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "05-cypress-mock-starter",
+  "version": "1.0.0",
+  "description": "CDC Workshop - Exercise 5: Cypress with Mocked API (Starter)",
+  "scripts": {
+    "dev": "vite",
+    "test": "cypress run",
+    "test:open": "cypress open"
+  },
+  "devDependencies": {
+    "cypress": "^13.6.0",
+    "vite": "^5.0.0"
+  }
+}

@@ -1,0 +1,97 @@
+name: Publish Workshop Contracts
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish-contracts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Frontend Workshop
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Run All Pact Tests
+        run: |
+          # Run tests in each exercise to collect all contracts
+          for exercise_dir in exercises/javascript/*/; do
+            if [ -f "$exercise_dir/package.json" ]; then
+              echo "Running tests in $exercise_dir"
+              cd "$exercise_dir"
+              npm install
+              npm test || true  # Continue even if tests fail
+              cd -
+            fi
+          done
+
+      - name: Checkout Contracts Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/ticket-contracts
+          path: contracts
+          token: ${{ secrets.CONTRACTS_PAT }}
+          persist-credentials: true
+
+      - name: Collect and Merge Generated Contracts
+        run: |
+          # Find the most recent contract file (latest exercise completed)
+          LATEST_CONTRACT=""
+          for exercise_dir in exercises/javascript/*/; do
+            CONTRACT_FILE="$exercise_dir/pacts/ticket-frontend-web-ticket-api.json"
+            if [ -f "$CONTRACT_FILE" ]; then
+              LATEST_CONTRACT="$CONTRACT_FILE"
+              echo "Found contract in $exercise_dir"
+            fi
+          done
+
+          if [ -z "$LATEST_CONTRACT" ]; then
+            echo "No contract files found"
+            exit 1
+          fi
+
+          echo "Using contract from: $LATEST_CONTRACT"
+          cp "$LATEST_CONTRACT" contracts/pacts/web/ticket-api-frontend-workshop-contracts.json
+
+      - name: Commit and Push Contracts
+        run: |
+          cd contracts
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add pacts/web/ticket-api-frontend-workshop-contracts.json
+
+          if git diff --staged --quiet; then
+            echo "No contract changes to commit"
+          else
+            git commit -m "chore: Update workshop contracts from frontend-workshop
+
+          Triggered manually from master branch
+          Commit: ${{ github.sha }}"
+            git push
+            echo "Workshop contracts updated successfully"
+          fi
+
+      - name: Trigger Provider Verification
+        env:
+          GH_TOKEN: ${{ secrets.CONTRACTS_PAT }}
+        run: |
+          curl -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            https://api.github.com/repos/${{ github.repository_owner }}/ticket-api/dispatches \
+            -d "{
+              \"event_type\": \"contract-updated\",
+              \"client_payload\": {
+                \"source\": \"frontend-workshop\",
+                \"commit\": \"${{ github.sha }}\",
+                \"workshop\": \"true\"
+              }
+            }"

@@ -1,0 +1,444 @@
+openapi: 3.0.3
+info:
+  title: Train Ticket Booking API
+  description: Train Ticket Booking System API - Authentication and Search
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /api/v1/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - firstName
+                - lastName
+                - phoneNumber
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: SecurePass123!
+                firstName:
+                  type: string
+                  example: John
+                lastName:
+                  type: string
+                  example: Doe
+                phoneNumber:
+                  type: string
+                  example: +31612345678
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+
+  /api/v1/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: SecurePass123!
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: INVALID_CREDENTIALS
+                  message:
+                    type: string
+                    example: Invalid email or password
+
+  /api/v1/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      operationId: refresh
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+
+  /api/v1/auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      operationId: logout
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+            example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '204':
+          description: Logout successful
+
+  /api/v1/search/trains:
+    post:
+      tags:
+        - Search
+      summary: Search for available trains
+      operationId: searchTrains
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - originStation
+                - destinationStation
+                - departureDate
+                - passengerCount
+                - classType
+              properties:
+                originStation:
+                  type: string
+                  example: AMS
+                destinationStation:
+                  type: string
+                  example: RTD
+                departureDate:
+                  type: string
+                  format: date
+                  example: 2026-12-25
+                passengerCount:
+                  type: integer
+                  example: 2
+                classType:
+                  type: string
+                  enum: [ECONOMY, FIRST_CLASS, BUSINESS]
+                  example: ECONOMY
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchTrainResponse'
+
+  /api/v1/search/availability/detail:
+    post:
+      tags:
+        - Search
+      summary: Get detailed train availability with seat map
+      operationId: getTrainAvailabilityDetail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - trainId
+                - date
+                - classType
+              properties:
+                trainId:
+                  type: string
+                  format: uuid
+                  example: 770e8400-e29b-41d4-a716-446655440002
+                date:
+                  type: string
+                  format: date
+                  example: 2026-12-25
+                classType:
+                  type: string
+                  enum: [ECONOMY, FIRST_CLASS, BUSINESS]
+                  example: ECONOMY
+      responses:
+        '200':
+          description: Train availability details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainAvailabilityDetailResponse'
+
+  /api/v1/search/seats/{trainId}/{date}/{coachClass}:
+    get:
+      tags:
+        - Search
+      summary: Get seat availability for a specific train and coach class
+      operationId: getSeatAvailability
+      parameters:
+        - name: trainId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: coachClass
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Seat availability
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeatAvailabilityDTO'
+
+components:
+  schemas:
+    UserDTO:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+        phoneNumber:
+          type: string
+          example: +31612345678
+        accessToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refreshToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        expiresIn:
+          type: integer
+          example: 3600
+
+    LoginResponse:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        accessToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refreshToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        expiresIn:
+          type: integer
+          example: 3600
+
+    TokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refreshToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        expiresIn:
+          type: integer
+          example: 3600
+
+    SearchTrainResponse:
+      type: object
+      properties:
+        searchId:
+          type: string
+          format: uuid
+          example: 660e8400-e29b-41d4-a716-446655440001
+        totalResults:
+          type: integer
+          example: 2
+        message:
+          type: string
+          example: 2 train(s) found
+        availableTrains:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrainSearchResultDTO'
+
+    TrainSearchResultDTO:
+      type: object
+      properties:
+        trainId:
+          type: string
+          format: uuid
+          example: 770e8400-e29b-41d4-a716-446655440002
+        trainNumber:
+          type: string
+          example: "9251"
+        trainName:
+          type: string
+          example: Intercity Direct
+        originStationCode:
+          type: string
+          example: AMS
+        originStationName:
+          type: string
+          example: Amsterdam Centraal
+        destinationStationCode:
+          type: string
+          example: RTD
+        destinationStationName:
+          type: string
+          example: Rotterdam Centraal
+        departureTime:
+          type: string
+          example: "08:15"
+        arrivalTime:
+          type: string
+          example: "08:55"
+        durationMinutes:
+          type: integer
+          example: 40
+        availableClasses:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassAvailabilityDTO'
+
+    ClassAvailabilityDTO:
+      type: object
+      properties:
+        classType:
+          type: string
+          enum: [ECONOMY, FIRST_CLASS, BUSINESS]
+          example: ECONOMY
+        coachType:
+          type: string
+          example: IC2
+        availableSeats:
+          type: integer
+          example: 50
+        fare:
+          type: number
+          format: double
+          example: 15.50
+
+    TrainAvailabilityDetailResponse:
+      type: object
+      properties:
+        trainId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        coachAvailability:
+          type: array
+          items:
+            $ref: '#/components/schemas/CoachAvailabilityDTO'
+
+    CoachAvailabilityDTO:
+      type: object
+      properties:
+        coachNumber:
+          type: string
+        coachType:
+          type: string
+        classType:
+          type: string
+        seats:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeatStatusDTO'
+
+    SeatStatusDTO:
+      type: object
+      properties:
+        seatNumber:
+          type: string
+        status:
+          type: string
+          enum: [AVAILABLE, BOOKED, RESERVED]
+
+    SeatAvailabilityDTO:
+      type: object
+      properties:
+        totalSeats:
+          type: integer
+          example: 72
+        availableSeats:
+          type: integer
+          example: 45
+        bookedSeats:
+          type: integer
+          example: 20
+        reservedSeats:
+          type: integer
+          example: 7

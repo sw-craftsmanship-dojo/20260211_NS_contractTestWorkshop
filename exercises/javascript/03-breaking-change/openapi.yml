@@ -1,0 +1,493 @@
+openapi: 3.0.3
+info:
+  title: Train Ticket Booking API
+  description: Train Ticket Booking System API - With V2 Breaking Changes
+  version: 2.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /api/v1/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - firstName
+                - lastName
+                - phoneNumber
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: SecurePass123!
+                firstName:
+                  type: string
+                  example: John
+                lastName:
+                  type: string
+                  example: Doe
+                phoneNumber:
+                  type: string
+                  example: +31612345678
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+
+  /api/v1/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: SecurePass123!
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+
+  /api/v1/search/trains:
+    post:
+      tags:
+        - Search V1
+      summary: Search for available trains (V1 - DEPRECATED)
+      operationId: searchTrainsV1
+      deprecated: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - originStation
+                - destinationStation
+                - departureDate
+                - passengerCount
+                - classType
+              properties:
+                originStation:
+                  type: string
+                  example: AMS
+                destinationStation:
+                  type: string
+                  example: RTD
+                departureDate:
+                  type: string
+                  format: date
+                  example: 2026-12-25
+                passengerCount:
+                  type: integer
+                  example: 2
+                classType:
+                  type: string
+                  enum: [ECONOMY, FIRST_CLASS, BUSINESS]
+                  example: ECONOMY
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchTrainResponse'
+
+  /api/v2/search/trains:
+    post:
+      tags:
+        - Search V2
+      summary: Search for available trains (V2)
+      operationId: searchTrainsV2
+      description: |
+        **BREAKING CHANGE from V1:**
+        - Request format simplified: `origin`/`destination` instead of `originStation`/`destinationStation`
+        - Response format changed: `price` is now an object `{amount: number, currency: string}` instead of a string
+        - V1 format: `"price": "89.00 EUR"`
+        - V2 format: `"price": {"amount": 89.00, "currency": "EUR"}`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - origin
+                - destination
+                - departureDate
+                - passengers
+              properties:
+                origin:
+                  type: string
+                  example: AMS
+                  description: Origin station code
+                destination:
+                  type: string
+                  example: PAR
+                  description: Destination station code
+                departureDate:
+                  type: string
+                  format: date
+                  example: 2026-02-15
+                passengers:
+                  type: integer
+                  minimum: 1
+                  example: 2
+                  description: Number of passengers
+      responses:
+        '200':
+          description: Search results with structured price
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponseV2'
+
+  /api/v1/bookings/reservations:
+    post:
+      tags:
+        - Booking
+      summary: Create a new reservation
+      operationId: createReservation
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - trainId
+                - journeyDate
+                - coachClass
+                - passengers
+              properties:
+                trainId:
+                  type: string
+                  format: uuid
+                journeyDate:
+                  type: string
+                  format: date
+                coachClass:
+                  type: string
+                  enum: [ECONOMY, FIRST_CLASS, BUSINESS]
+                passengers:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/PassengerInfo'
+      responses:
+        '201':
+          description: Reservation created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationDTO'
+
+  /api/v1/bookings/reservations/{reservationId}:
+    get:
+      tags:
+        - Booking
+      summary: Get reservation details
+      operationId: getReservationDetails
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Reservation details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationDTO'
+
+    delete:
+      tags:
+        - Booking
+      summary: Cancel a reservation
+      operationId: cancelReservation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Reservation cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancellationResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UserDTO:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phoneNumber:
+          type: string
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+
+    LoginResponse:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+
+    SearchTrainResponse:
+      type: object
+      description: V1 Search Response (DEPRECATED)
+      properties:
+        searchId:
+          type: string
+          format: uuid
+        totalResults:
+          type: integer
+        message:
+          type: string
+        availableTrains:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrainSearchResultDTO'
+
+    TrainSearchResultDTO:
+      type: object
+      description: V1 Train Result (DEPRECATED)
+      properties:
+        trainId:
+          type: string
+          format: uuid
+        trainNumber:
+          type: string
+        trainName:
+          type: string
+        originStationCode:
+          type: string
+        originStationName:
+          type: string
+        destinationStationCode:
+          type: string
+        destinationStationName:
+          type: string
+        departureTime:
+          type: string
+        arrivalTime:
+          type: string
+        durationMinutes:
+          type: integer
+        availableClasses:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassAvailabilityDTO'
+
+    ClassAvailabilityDTO:
+      type: object
+      properties:
+        classType:
+          type: string
+          enum: [ECONOMY, FIRST_CLASS, BUSINESS]
+        coachType:
+          type: string
+        availableSeats:
+          type: integer
+        fare:
+          type: number
+          format: double
+
+    SearchResponseV2:
+      type: object
+      description: V2 Search Response with structured price
+      properties:
+        searchId:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        totalResults:
+          type: integer
+          example: 3
+        availableTrains:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrainResultV2'
+
+    TrainResultV2:
+      type: object
+      description: V2 Train Result with price as object (BREAKING CHANGE)
+      properties:
+        trainId:
+          type: string
+          format: uuid
+          example: 660e8400-e29b-41d4-a716-446655440001
+        trainNumber:
+          type: string
+          example: THA9251
+        departureTime:
+          type: string
+          example: "08:15"
+        arrivalTime:
+          type: string
+          example: "11:47"
+        price:
+          $ref: '#/components/schemas/PriceV2'
+
+    PriceV2:
+      type: object
+      description: Structured price object (V2 format)
+      required:
+        - amount
+        - currency
+      properties:
+        amount:
+          type: number
+          format: double
+          example: 89.00
+          description: Price amount
+        currency:
+          type: string
+          example: EUR
+          description: Currency code
+
+    PassengerInfo:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - age
+        - gender
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        age:
+          type: integer
+        gender:
+          type: string
+          enum: [MALE, FEMALE, OTHER]
+        seatPreference:
+          type: string
+          enum: [WINDOW, AISLE, MIDDLE]
+
+    ReservationDTO:
+      type: object
+      properties:
+        reservationId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [ACTIVE, EXPIRED, CANCELLED]
+        expiryTime:
+          type: string
+          format: date-time
+        totalAmount:
+          type: number
+          format: double
+        passengers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PassengerInfo'
+        fareBreakdown:
+          $ref: '#/components/schemas/FareBreakdownDTO'
+
+    CancellationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+    FareBreakdownDTO:
+      type: object
+      properties:
+        baseFare:
+          type: number
+          format: double
+        reservationCharges:
+          type: number
+          format: double
+        serviceTax:
+          type: number
+          format: double
+        convenienceFee:
+          type: number
+          format: double
+        totalAmount:
+          type: number
+          format: double
+        currency:
+          type: string
