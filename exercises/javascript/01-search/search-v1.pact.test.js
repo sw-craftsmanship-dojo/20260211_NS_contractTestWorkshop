@@ -104,6 +104,7 @@ describe('Search API Contract', () => {
         // 2. Send the search criteria in the body
         // 3. Add assertions for response.status and response.data
 
+        throw new Error('TODO: Implement this test');
       });
     });
   });

@@ -107,6 +107,7 @@ describe('Booking API Contract', () => {
       await provider.executeTest(async (mockServer) => {
         // YOUR CODE HERE
 
+        throw new Error('TODO: Implement this test');
       });
     });
   });
