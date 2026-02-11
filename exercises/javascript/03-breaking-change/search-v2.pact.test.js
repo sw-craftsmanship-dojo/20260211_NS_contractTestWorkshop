@@ -37,6 +37,7 @@ describe('Search API Contract - v2 (THE NEW WAY)', () => {
       // HINT: Use provider.given('trains exist for route AMS to PAR on 2026-02-15')
 
       // YOUR CODE HERE
+      provider.given('trains exist for route AMS to RTD on 2026-12-25');
 
 
       // ============================================================
@@ -51,6 +52,41 @@ describe('Search API Contract - v2 (THE NEW WAY)', () => {
       //     amount: decimal(89.00),
       //     currency: like('EUR')
       //   }
+      provider
+              .uponReceiving('a v2 search request for trains from AMS to PAR')
+              .withRequest({
+                method: 'POST',
+                path: '/api/v2/search/trains',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: {
+                  originStation: "AMS",
+                  destinationStation: "RTD",
+                  departureDate: "2026-12-25T00:00:00.000Z",
+                  passengerCount: 2,
+                  classType: "ECONOMY"
+                },
+              })
+              .willRespondWith({
+                status: 200,
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: {
+                  searchId: like('550e8400-e29b-41d4-a716-446655440000'),
+                  totalResults: like(3),
+                  availableTrains: eachLike(
+                    {
+                      trainId: like("83e82aba-cfe0-41de-a43e-5dd2cbb3c121"),
+                      trainNumber: like("THA9251"),
+                      departureTime: like("08:15"),
+                      arrivalTime: like("11:47"),
+                      price: { amount: like(89.00), currency: like("EUR") }
+                    }
+                  )
+                }
+              });
 
       // YOUR CODE HERE (uponReceiving)
 
@@ -82,7 +118,30 @@ describe('Search API Contract - v2 (THE NEW WAY)', () => {
         //    - typeof firstTrain.price.amount should be 'number'
         //    - typeof firstTrain.price.currency should be 'string'
 
-        throw new Error('TODO: Implement this test');
+        const response = await axios.post(
+                  `${mockServer.url}/api/v2/search/trains`, 
+                  {
+                    originStation: "AMS",
+                    destinationStation: "RTD",
+                    departureDate: "2026-12-25T00:00:00.000Z",
+                    passengerCount: 2,
+                    classType: "ECONOMY"
+                  },
+                  {
+                    headers: { 'Content-Type': 'application/json' }
+                  }
+                )
+      
+        
+                expect(response.status).toBe(200);
+                expect(response.data).toHaveProperty('searchId');
+                expect(response.data).toHaveProperty('totalResults');
+                expect(response.data).toHaveProperty('availableTrains');
+                expect(response.data.availableTrains[0]).toHaveProperty('price');
+                expect(response.data.availableTrains[0].price).toHaveProperty('amount');
+                expect(response.data.availableTrains[0].price).toHaveProperty('currency');
+                expect(typeof response.data.availableTrains[0].price.amount).toBe('number');
+                expect(typeof response.data.availableTrains[0].price.currency).toBe('string');
       });
     });
   });
