@@ -21,68 +21,72 @@ const provider = new PactV3({
 describe('Search API Contract - v2 (THE NEW WAY)', () => {
   describe('POST /api/v2/search/trains', () => {
     it('returns available trains with structured price format', async () => {
-      // ============================================================
-      // SCENARIO: Migrating to v2 API
-      // ============================================================
-      // The v1 API used: "price": "89.00 EUR" (a simple string)
-      // The v2 API uses: "price": { "amount": 89.00, "currency": "EUR" }
-      //
-      // Your frontend needs to update to use the new structured format:
-      // - train.price.amount to get the numeric value
-      // - train.price.currency to get the currency code
+       // Provider state
+      provider.given('trains exist for route AMS to PAR on 2026-02-15');
 
-      // ============================================================
-      // TODO 1: Define the provider state
-      // ============================================================
-      // HINT: Use provider.given('trains exist for route AMS to PAR on 2026-02-15')
+      // Define the expected interaction
+      provider
+        .uponReceiving('a v2 search request for trains from AMS to PAR')
+        .withRequest({
+          method: 'POST',
+          path: '/api/v2/search/trains',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: {
+            origin: 'AMS',
+            destination: 'PAR',
+            departureDate: '2026-02-15',
+            passengers: 2,
+          },
+        })
+        .willRespondWith({
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: {
+            searchId: like('550e8400-e29b-41d4-a716-446655440000'),
+            totalResults: integer(3),
+            availableTrains: eachLike({
+              trainId: like('660e8400-e29b-41d4-a716-446655440001'),
+              trainNumber: like('THA9251'),
+              departureTime: like('08:15'),
+              arrivalTime: like('11:47'),
+              // V2 FORMAT: Price as object!
+              price: {
+                amount: decimal(89.0),
+                currency: like('EUR'),
+              },
+            }),
+          },
+        });
 
-      // YOUR CODE HERE
-
-
-      // ============================================================
-      // TODO 2: Define the expected interaction (NEW v2 FORMAT)
-      // ============================================================
-      // HINT: Use provider.uponReceiving('a v2 search request for trains from AMS to PAR')
-      //       .withRequest({ method, path, headers, body })
-      //       .willRespondWith({ status, headers, body })
-      //
-      // IMPORTANT: Use the NEW price format:
-      //   price: {
-      //     amount: decimal(89.00),
-      //     currency: like('EUR')
-      //   }
-
-      // YOUR CODE HERE (uponReceiving)
-
-
-      // YOUR CODE HERE (withRequest)
-      // - method: 'POST'
-      // - path: '/api/v2/search/trains' <- NOTICE: v2 endpoint!
-      // - body: origin, destination, departureDate, passengers
-
-
-      // YOUR CODE HERE (willRespondWith)
-      // - status: 200
-      // - body with: searchId, totalResults, availableTrains
-      // - availableTrains: eachLike() with trainId, trainNumber, departureTime, arrivalTime
-      // - price: { amount: decimal(89.00), currency: like('EUR') } <- NEW FORMAT!
-
-
+      // Execute the test
       await provider.executeTest(async (mockServer) => {
-        // ============================================================
-        // TODO: Execute the test
-        // ============================================================
-        // YOUR CODE HERE
-        // 1. Make axios.post request to mockServer.url + '/api/v2/search/trains'
-        // 2. Send the search criteria in the body
-        // 3. Add assertions for:
-        //    - response.status should be 200
-        //    - response.data should have 'availableTrains' property
-        //    - firstTrain.price should be an object with 'amount' and 'currency' properties
-        //    - typeof firstTrain.price.amount should be 'number'
-        //    - typeof firstTrain.price.currency should be 'string'
+        const response = await axios.post(
+          `${mockServer.url}/api/v2/search/trains`,
+          {
+            origin: 'AMS',
+            destination: 'PAR',
+            departureDate: '2026-02-15',
+            passengers: 2,
+          },
+          {
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
 
-        throw new Error('TODO: Implement this test');
+        expect(response.status).toBe(200);
+        expect(response.data).toHaveProperty('searchId');
+        expect(response.data).toHaveProperty('availableTrains');
+        expect(Array.isArray(response.data.availableTrains)).toBe(true);
+
+        // V2: Price should be an OBJECT with amount and currency
+        const firstTrain = response.data.availableTrains[0];
+        expect(firstTrain.price).toHaveProperty('amount');
+        expect(firstTrain.price).toHaveProperty('currency');
+        expect(typeof firstTrain.price.amount).toBe('number');
       });
     });
   });
