@@ -26,7 +26,7 @@ You're building a train ticket booking application with these core features:
 - **Search**: Find available trains between stations
 - **Booking**: Reserve tickets for passengers
 
-The backend team provides a REST API at `https://workshop--ticket-api--7jydqjwn7yp5.code.run/api/v1/` with endpoints for each feature. Your contracts will define exactly what your frontend expects from these endpoints.
+The backend team provides a REST API at `https://workshop--ticket-api--7jydqjwn7yp5.code.run/` with endpoints for each feature. Your contracts will define exactly what your frontend expects from these endpoints.
 
 ## Exercise Structure
 
