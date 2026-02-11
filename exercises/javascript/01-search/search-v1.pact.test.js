@@ -45,66 +45,76 @@ const provider = new PactV3({
 describe('Search API Contract', () => {
   describe('POST /api/v1/search/trains', () => {
     it('returns available trains for a valid search', async () => {
-      // ============================================================
-      // TODO 1: Define the provider state
-      // ============================================================
-      // HINT: Use provider.given('state description')
-      // The state should describe what data exists on the provider.
-      // Example: 'trains exist for route AMS to PAR on 2026-02-15'
+     // Provider state
+      provider.given('trains exist for route AMS to PAR on 2026-02-15');
 
-      // YOUR CODE HERE
+      // Define the expected interaction
+      provider
+        .uponReceiving('a v1 search request for trains from AMS to PAR')
+        .withRequest({
+          method: 'POST',
+          path: '/api/v1/search/trains',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: {
+            originStation: 'AMS',
+            destinationStation: 'PAR',
+            departureDate: '2026-02-15',
+            passengerCount: 2,
+            classType: 'ECONOMY',
+          },
+        })
+        .willRespondWith({
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: {
+            searchId: like('550e8400-e29b-41d4-a716-446655440000'),
+            totalResults: integer(3),
+            message: like('3 train(s) found'),
+            availableTrains: eachLike({
+              trainId: like('660e8400-e29b-41d4-a716-446655440001'),
+              trainNumber: like('THA9251'),
+              trainName: like('Thalys'),
+              originStationCode: like('AMS'),
+              originStationName: like('Amsterdam'),
+              destinationStationCode: like('PAR'),
+              destinationStationName: like('Paris'),
+              departureTime: like('08:15'),
+              arrivalTime: like('11:47'),
+              durationMinutes: integer(212),
+              // V1 FORMAT: Price as string!
+              price: like('89.00 EUR'),
+            }),
+          },
+        });
 
-
-      // ============================================================
-      // TODO 2: Define the expected interaction
-      // ============================================================
-      // HINT: Use provider.uponReceiving('description')
-      //       .withRequest({ method, path, headers, body })
-      //       .willRespondWith({ status, headers, body })
-
-      // YOUR CODE HERE (uponReceiving)
-
-
-      // YOUR CODE HERE (withRequest)
-      // Remember:
-      // - method: 'POST'
-      // - path: '/api/v1/search/trains'
-      // - headers: Content-Type application/json
-      // - body: origin, destination, departureDate, passengers
-
-
-      // YOUR CODE HERE (willRespondWith)
-      // Remember:
-      // - status: 200
-      // - body should include:
-      //   - searchId: use like() for UUID
-      //   - totalResults: use integer()
-      //   - availableTrains: use eachLike() for the array!
-      //
-      // NEW CONCEPT: eachLike() matches an array where each element
-      // matches the provided example. This is crucial for arrays!
-      //
-      // Example:
-      // availableTrains: eachLike({
-      //   trainId: like('uuid'),
-      //   trainNumber: like('THA9251'),
-      //   ...
-      // })
-
-
-      // ============================================================
-      // TODO 3: Execute the test
-      // ============================================================
-      // HINT: Use provider.executeTest(async (mockServer) => { ... })
-      // Make the axios POST request and verify the response.
-
+      // Execute the test
       await provider.executeTest(async (mockServer) => {
-        // YOUR CODE HERE
-        // 1. Make axios.post request to mockServer.url + '/api/v1/search/trains'
-        // 2. Send the search criteria in the body
-        // 3. Add assertions for response.status and response.data
+        const response = await axios.post(
+          `${mockServer.url}/api/v1/search/trains`,
+          {
+            originStation: 'AMS',
+            destinationStation: 'PAR',
+            departureDate: '2026-02-15',
+            passengerCount: 2,
+            classType: 'ECONOMY',
+          },
+          {
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
 
-        throw new Error('TODO: Implement this test');
+        expect(response.status).toBe(200);
+        expect(response.data).toHaveProperty('searchId');
+        expect(response.data).toHaveProperty('availableTrains');
+        expect(Array.isArray(response.data.availableTrains)).toBe(true);
+
+        // V1: Price should be a STRING
+        const firstTrain = response.data.availableTrains[0];
+        expect(typeof firstTrain.price).toBe('string');
       });
     });
   });
