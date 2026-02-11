@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "CDC Workshop - Exercise 2: Booking Contract (Starter)",
   "scripts": {
-    "test": "jest --testPathPattern=pact"
+    "test": "jest --testPathPatterns=pact"
   },
   "devDependencies": {
     "@pact-foundation/pact": "^13.2.0",

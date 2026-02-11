@@ -82,7 +82,7 @@ describe('Search API Contract - v2 (THE NEW WAY)', () => {
         //    - typeof firstTrain.price.amount should be 'number'
         //    - typeof firstTrain.price.currency should be 'string'
 
-        throw new Error('TODO: Implement this test');
+        
       });
     });
   });

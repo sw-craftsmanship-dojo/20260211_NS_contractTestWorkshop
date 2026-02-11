@@ -77,7 +77,7 @@ describe('Booking API Contract', () => {
 
       const responseBody = {
             "reservationId": "uuid",
-            "trainNumber": "THA9251",
+            "trainNumber": 9251,
             "trainName": "Thalys",
             "status": "ACTIVE",
             "expiryTime": "2026-02-15T10:30:00",

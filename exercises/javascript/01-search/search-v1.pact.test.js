@@ -53,6 +53,9 @@ describe('Search API Contract', () => {
       // Example: 'trains exist for route AMS to PAR on 2026-02-15'
 
       // YOUR CODE HERE
+      provider
+        .given('that searched trains are available');
+
 
 
       // ============================================================
@@ -63,7 +66,34 @@ describe('Search API Contract', () => {
       //       .willRespondWith({ status, headers, body })
 
       // YOUR CODE HERE (uponReceiving)
-
+      provider.uponReceiving('available trains')
+        .withRequest({
+          method: 'POST',
+          path: '/api/v1/search/trains',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: {
+              originStation: "AMS",
+              destinationStation: "PAR",
+              departureDate: "2026-02-15",
+              passengerCount: 2,
+              classType: "ECONOMY"
+          }
+        })
+        .willRespondWith({
+            searchId: "uuid",
+            totalResults: 3,
+            availableTrains: [
+                 {
+                  trainId: "uuid",
+                  trainNumber: "THA9251",
+                  departureTime: "08:15",
+                  arrivalTime: "11:47",
+                  price: { "amount": 89.00, "currency": "EUR" }
+               }
+            ]
+          })
 
       // YOUR CODE HERE (withRequest)
       // Remember:
