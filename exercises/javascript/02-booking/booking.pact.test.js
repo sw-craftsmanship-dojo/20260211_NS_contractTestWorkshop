@@ -60,6 +60,8 @@ describe('Booking API Contract', () => {
       // - The user is authenticated
 
       // YOUR CODE HERE
+      provider.given('A valid train exists for the route');
+      // provider.given('The user is authenticated');
 
 
       // ============================================================
@@ -71,7 +73,51 @@ describe('Booking API Contract', () => {
       // - passengers is an array, use eachLike()
 
       // YOUR CODE HERE (uponReceiving)
-
+            provider
+        .uponReceiving('a reservation request for AMS to PAR on 2026-02-15 for Marco Rossi').withRequest({
+          method: 'POST',
+          path: '/api/v1/bookings/reservations',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': like('Bearer eyJhbGci'),
+          },
+          body: {
+            trainId: like('uuid-of-selected-train'),
+            journeyDate: like('2026-02-15'),
+            originStation: like('AMS'),
+            destinationStation: like('PAR'),
+            coachClass: like('ECONOMY'),
+            passengers: eachLike({
+              firstName: like('Marco'), 
+              lastName: like('Rossi'), 
+              age: integer(35), 
+              gender: like('MALE'), 
+              seatPreference: like('WINDOW')
+            }),
+            includeInsurance: like(false),
+          },
+        })
+        .willRespondWith({
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: {
+            reservationId: like('uuid'),
+            trainNumber: like('THA9251'),
+            trainName: like('Thalys'),
+            status: like('ACTIVE'),
+            expiryTime: like('2026-02-15T10:30:00'),
+            passengers: eachLike({
+              firstName: like('Marco'), 
+              lastName: like('Rossi'), 
+              age: integer(35), 
+              gender: like('MALE'), 
+              seatPreference: like('WINDOW'),
+            }),
+            totalAmount: decimal(89.00),
+          }
+        });
 
       // YOUR CODE HERE (withRequest)
       // Headers should include:
@@ -105,9 +151,33 @@ describe('Booking API Contract', () => {
       // Don't forget to include the Authorization header in your request!
 
       await provider.executeTest(async (mockServer) => {
-        // YOUR CODE HERE
-
-        throw new Error('TODO: Implement this test');
+        const response = await axios.post(
+          `${mockServer.url}/api/v1/bookings/reservations`, 
+          {
+            trainId: "uuid-of-selected-train",
+            journeyDate: "2026-02-15",
+            originStation: "AMS",
+            destinationStation: "PAR",
+            coachClass: "ECONOMY",
+            passengers: [
+              {
+                firstName: "Marco",
+                lastName: "Rossi",
+                age: 35,
+                gender: "MALE",
+                seatPreference: "WINDOW"
+              }
+            ],
+            includeInsurance: false
+          },
+          {
+            headers: { 
+              'Content-Type': 'application/json', 
+              'Authorization': 'Bearer eyJhbGci' 
+            }
+          }
+        )
+        expect(response.status).toBe(200);
       });
     });
   });
