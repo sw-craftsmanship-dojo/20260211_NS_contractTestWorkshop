@@ -52,62 +52,102 @@ const provider = new PactV3({
 describe('Booking API Contract', () => {
   describe('POST /api/v1/bookings/reservations', () => {
     it('creates a reservation for selected train', async () => {
-      // ============================================================
-      // TODO 1: Define the provider state
-      // ============================================================
-      // HINT: The state should indicate:
-      // - A valid train exists for the route
-      // - The user is authenticated
+     // Provider state
+      provider.given('a valid train THA9251 exists for route AMS to PAR and user is authenticated');
 
-      // YOUR CODE HERE
+      // Define the expected interaction
+      provider
+        .uponReceiving('a request to create a reservation')
+        .withRequest({
+          method: 'POST',
+          path: '/api/v1/bookings/reservations',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': like('Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U'),
+          },
+          body: {
+            trainId: like('660e8400-e29b-41d4-a716-446655440001'),
+            journeyDate: '2026-02-15',
+            originStation: 'AMS',
+            destinationStation: 'PAR',
+            coachClass: 'ECONOMY',
+            passengers: [
+              {
+                firstName: 'Marco',
+                lastName: 'Rossi',
+                age: 35,
+                gender: 'MALE',
+                seatPreference: 'WINDOW',
+              },
+            ],
+            includeInsurance: false,
+          },
+        })
+        .willRespondWith({
+          status: 201,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: {
+            reservationId: like('770e8400-e29b-41d4-a716-446655440002'),
+            trainId: like('660e8400-e29b-41d4-a716-446655440001'),
+            trainNumber: like('THA9251'),
+            trainName: like('Thalys'),
+            journeyDate: like('2026-02-15'),
+            originStation: like('AMS'),
+            destinationStation: like('PAR'),
+            coachClass: like('ECONOMY'),
+            status: like('ACTIVE'),
+            expiryTime: like('2026-02-15T10:30:00'),
+            passengers: eachLike({
+              firstName: like('Marco'),
+              lastName: like('Rossi'),
+              age: integer(35),
+              gender: like('MALE'),
+              seatPreference: like('WINDOW'),
+              seatNumber: like('12A'),
+            }),
+            totalAmount: decimal(89.0),
+            createdAt: like('2026-02-15T10:15:00'),
+          },
+        });
 
-
-      // ============================================================
-      // TODO 2: Define the expected interaction
-      // ============================================================
-      // REMEMBER:
-      // - This endpoint requires Authorization header!
-      // - Use like('Bearer token') for the auth header
-      // - passengers is an array, use eachLike()
-
-      // YOUR CODE HERE (uponReceiving)
-
-
-      // YOUR CODE HERE (withRequest)
-      // Headers should include:
-      // - 'Content-Type': 'application/json'
-      // - 'Authorization': like('Bearer eyJhbGci...')
-      //
-      // Body should include:
-      // - trainId: like('uuid')
-      // - journeyDate: '2026-02-15'
-      // - originStation: 'AMS'
-      // - destinationStation: 'PAR'
-      // - coachClass: 'ECONOMY'
-      // - passengers array with: firstName, lastName, age, gender, seatPreference
-      // - includeInsurance: false
-
-
-      // YOUR CODE HERE (willRespondWith)
-      // Response should include:
-      // - reservationId: like()
-      // - trainNumber: like()
-      // - trainName: like()
-      // - status: like('ACTIVE')
-      // - expiryTime: like()
-      // - passengers: eachLike() with seatNumber assigned
-      // - totalAmount: decimal()
-
-
-      // ============================================================
-      // TODO 3: Execute the test
-      // ============================================================
-      // Don't forget to include the Authorization header in your request!
-
+      // Execute the test
       await provider.executeTest(async (mockServer) => {
-        // YOUR CODE HERE
+        const response = await axios.post(
+          `${mockServer.url}/api/v1/bookings/reservations`,
+          {
+            trainId: '660e8400-e29b-41d4-a716-446655440001',
+            journeyDate: '2026-02-15',
+            originStation: 'AMS',
+            destinationStation: 'PAR',
+            coachClass: 'ECONOMY',
+            passengers: [
+              {
+                firstName: 'Marco',
+                lastName: 'Rossi',
+                age: 35,
+                gender: 'MALE',
+                seatPreference: 'WINDOW',
+              },
+            ],
+            includeInsurance: false,
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U',
+            },
+          }
+        );
 
-        throw new Error('TODO: Implement this test');
+        expect(response.status).toBe(201);
+        expect(response.data).toHaveProperty('reservationId');
+        expect(response.data).toHaveProperty('trainNumber');
+        expect(response.data.status).toBe('ACTIVE');
+        expect(response.data).toHaveProperty('passengers');
+        expect(response.data).toHaveProperty('totalAmount');
+        expect(response.data).toHaveProperty('expiryTime');
       });
     });
   });
