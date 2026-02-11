@@ -87,15 +87,13 @@ describe('Search API Contract', () => {
           body: {
             searchId: like('550e8400-e29b-41d4-a716-446655440000'),
             totalResults: like(3),
-            availableTrains: eachLike([
-              {
+            availableTrains: eachLike({
                 trainId: like("83e82aba-cfe0-41de-a43e-5dd2cbb3c121"),
                 trainNumber: like("THA9251"),
                 departureTime: like("08:15"),
                 arrivalTime: like("11:47"),
-                price: { amount: like(89.00), currency: like("EUR") }
-              }
-            ])
+                price: like('89.00 EUR')
+              })
           }
         });
 
