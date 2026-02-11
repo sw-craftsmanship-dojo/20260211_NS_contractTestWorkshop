@@ -53,7 +53,7 @@ describe('Search API Contract', () => {
       // Example: 'trains exist for route AMS to PAR on 2026-02-15'
 
       // YOUR CODE HERE
-
+      provider.given('trains exist for route AMS to RTD on 2026-12-25');
 
       // ============================================================
       // TODO 2: Define the expected interaction
@@ -63,7 +63,41 @@ describe('Search API Contract', () => {
       //       .willRespondWith({ status, headers, body })
 
       // YOUR CODE HERE (uponReceiving)
-
+      provider
+        .uponReceiving('a search request for trains from AMS to RTD on 2026-12-25 for 2 passengers')
+        .withRequest({
+          method: 'POST',
+          path: '/api/v1/search/trains',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: {
+            originStation: "AMS",
+            destinationStation: "RTD",
+            departureDate: "2026-12-25T00:00:00.000Z",
+            passengerCount: 2,
+            classType: "ECONOMY"
+          },
+        })
+        .willRespondWith({
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: {
+            searchId: like('550e8400-e29b-41d4-a716-446655440000'),
+            totalResults: like(3),
+            availableTrains: eachLike([
+              {
+                trainId: like("83e82aba-cfe0-41de-a43e-5dd2cbb3c121"),
+                trainNumber: like("THA9251"),
+                departureTime: like("08:15"),
+                arrivalTime: like("11:47"),
+                price: { amount: like(89.00), currency: like("EUR") }
+              }
+            ])
+          }
+        });
 
       // YOUR CODE HERE (withRequest)
       // Remember:
@@ -103,8 +137,26 @@ describe('Search API Contract', () => {
         // 1. Make axios.post request to mockServer.url + '/api/v1/search/trains'
         // 2. Send the search criteria in the body
         // 3. Add assertions for response.status and response.data
+        const response = await axios.post(
+          `${mockServer.url}/api/v1/search/trains`, 
+          {
+            originStation: "AMS",
+            destinationStation: "RTD",
+            departureDate: "2026-12-25T00:00:00.000Z",
+            passengerCount: 2,
+            classType: "ECONOMY"
+          },
+          {
+            headers: { 'Content-Type': 'application/json' }
+          }
+        )
 
-        throw new Error('TODO: Implement this test');
+        console.log(response.data)
+
+        expect(response.status).toBe(200);
+        expect(response.data).toHaveProperty('searchId');
+        expect(response.data).toHaveProperty('totalResults');
+        expect(response.data).toHaveProperty('availableTrains');
       });
     });
   });
